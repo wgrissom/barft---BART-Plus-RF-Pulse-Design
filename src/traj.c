@@ -86,6 +86,9 @@ int main_traj(int argc, char* argv[])
 	int mb = 0;
 	int accel = 1;
 	bool radial = false;
+    int spiralLeaves = 1;
+    float kmax = 64;
+    bool spiral = false;
 	bool golden = false;
 	bool aligned = false;
 	bool dbl = false;
@@ -108,10 +111,12 @@ int main_traj(int argc, char* argv[])
 		OPT_INT('a', &accel, "a", "acceleration"),
 		OPT_INT('t', &turns, "t", "turns"),
 		OPT_INT('m', &mb, "mb", "SMS multiband factor"),
-		OPT_SET('l', &aligned, "aligned partition angle"),
+        OPT_INT('I', &spiralLeaves, "I", "spiral interleaves/shots"),
+        OPT_SET('l', &aligned, "aligned partition angle"),
 		OPT_SET('g', &pGold, "golden angle in partition direction"),
 		OPT_SET('r', &radial, "radial"),
-		OPT_SET('G', &golden, "golden-ratio sampling"),
+        OPT_SET('s', &spiral, "spiral"),
+        OPT_SET('G', &golden, "golden-ratio sampling"),
 		OPT_SET('H', &halfCircle, "halfCircle golden-ratio sampling"),
 		OPT_SET('D', &dbl, "double base angle"),
 		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: x, y, xy"),
@@ -133,7 +138,15 @@ int main_traj(int argc, char* argv[])
 	int N = X * Y / accel;
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
 	dims[0] = 3;
-	dims[1] = X;
+    
+    if (spiral) {
+        kmax = X / 2;
+        turns = ceil((float)X / 2. / (float)(accel * spiralLeaves)); // number of turns in each spiral leaf
+        X = (int)(M_PI * (float)X * (float)turns); // number of points on each spiral leaf, based on number of points on outermost turn
+        N = spiralLeaves * X;
+    }
+
+    dims[1] = X;
 
 	if (halfCircle)
 		golden = true;
@@ -172,19 +185,22 @@ int main_traj(int argc, char* argv[])
 		if (aligned || pGold)
 			mode = ALIGNED;
 
-	} else {
+	} else if (!spiral) {
 
 		if ((turns != 1) || (mb != 1))
 			error("No turns or spokes in Cartesian trajectories please!");
 	}
 
-	dims[2] = (radial ? spp : (Y / accel));
+    Y = (spiral ? spiralLeaves : Y); // if spiral, Y is number of interleafs
+    accel = (spiral ? 1 : accel); // if spiral, accel is already incorporated in turns
 
+	dims[2] = (radial ? spp : (Y / accel));
+    
 	complex float* samples = create_cfl(argv[1], DIMS, dims);
 
 	int p = 0;
-	for (int j = 0; j < Y; j += accel) {
-		for (int i = 0; i < X; i++) {
+	for (int j = 0; j < Y; j += accel) { /* loop over lines or spiral leafs */
+		for (int i = 0; i < X; i++) { /* loop over readout points on each line or arc */
 
 			if (radial) {
 
@@ -253,7 +269,14 @@ int main_traj(int argc, char* argv[])
 				samples[p * 3 + 1] = d[0] + read * read_dir[0];
 				samples[p * 3 + 2] = d[2] + read * read_dir[2];
 
-			} else {
+            } else if (spiral) { /* BARFT constant angular rate spiral traj design */
+                
+                float t = (1. - (float)i / (float)X);
+                samples[p * 3 + 0] = kmax * t * cosf(2. * M_PI * (float)turns * t);
+                samples[p * 3 + 1] = kmax * t * sinf(2. * M_PI * (float)turns * t);
+                samples[p * 3 + 2] = 0;
+                
+            } else { /* Cartesian */
 
 				samples[p * 3 + 0] = (i - X / 2);
 				samples[p * 3 + 1] = (j - Y / 2);
