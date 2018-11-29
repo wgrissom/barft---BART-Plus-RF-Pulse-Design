@@ -135,7 +135,7 @@ int main_traj(int argc, char* argv[])
 	if (0 != mb)
 		Y = Y * mb * turns;	// total number of spokes
 
-	int N = X * Y / accel;
+	int N = X * Y / accel; // total number of points
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
 	dims[0] = 3;
     
@@ -271,9 +271,10 @@ int main_traj(int argc, char* argv[])
 
             } else if (spiral) { /* BARFT constant angular rate spiral traj design */
                 
-                float t = (1. - (float)i / (float)X);
-                samples[p * 3 + 0] = kmax * t * cosf(2. * M_PI * (float)turns * t);
-                samples[p * 3 + 1] = kmax * t * sinf(2. * M_PI * (float)turns * t);
+                float t = (1. - 1./(float)X - (float)i / (float)X);
+                float phi = 2. * M_PI * (float)turns * t + (float)j * 2. * M_PI / (float)spiralLeaves;
+                samples[p * 3 + 0] = kmax * t * cosf(phi);
+                samples[p * 3 + 1] = kmax * t * sinf(phi);
                 samples[p * 3 + 2] = 0;
                 
             } else { /* Cartesian */
