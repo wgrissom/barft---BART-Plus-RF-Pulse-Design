@@ -191,6 +191,7 @@ MODULES_estdims = -lnoncart -llinops
 MODULES_ismrmrd = -lismrm
 MODULES_wavelet = -llinops -lwavelet
 MODULES_wshfl = -llinops -lwavelet -liter -llowrank -llinops
+MODULES_stspa = -liter -llinops -lnoncart
 
 
 MAKEFILES = $(root)/Makefiles/Makefile.*
@@ -212,7 +213,7 @@ endif
 
 
 
-XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM)
+XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TDES)
 TARGETS = bart $(XTARGETS)
 
 
