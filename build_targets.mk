@@ -8,3 +8,4 @@ TCALIB=ecalib ecaltwo caldir walsh cc ccapply calmat svd estvar whiten
 TMRI=homodyne poisson twixread fakeksp
 TSIM=phantom traj
 TIO=toimg
+TDES=stspa
