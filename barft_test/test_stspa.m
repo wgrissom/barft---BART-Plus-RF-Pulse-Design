@@ -26,7 +26,23 @@ end
 lambda = 1;
 rfMat = (Abig'*Abig + lambda*eye(size(Abig,2)))\(Abig'*target(:));
 
-% design the pulses (barft)
+%% design the pulses (barft)
+for ii = 1:Nc
+   target8(:,:,ii) = target;
+   kmask8(:,:,ii) = kmask;
+end
 
-% check differences
+pulses = bart('stspa 1', sens, target8, double(kmask8));
+
+for ii = 1:Nc
+    holder = squeeze(pulses(:,:,ii));
+    pulses2(:,:,ii) = holder(any(holder,2),:);
+end
+
+%% check differences
 mMat = reshape(Abig*rfMat,[N N]);
+
+mBarft = zeros(size(squeeze(pulses2(:,:,1))));
+for ii = 1:Nc
+    mBarft = mBarft + fftshift(ifft2(pulses2(:,:,ii)));
+end
